@@ -1,0 +1,110 @@
+this file tells how to use this ddos_det file locally and find ddos  possible ddos attacks launching to your server
+
+
+✅ Phase 4: DDoS Simulation, Suricata Log Reset, and Detection Analysis
+🔹 Step 1: Stop Suricata and Clean Up
+Before clearing logs, ensure Suricata is stopped completely.
+
+bash
+Copy
+Edit
+sudo systemctl stop suricata || sudo pkill suricata
+sudo rm -f /run/suricata.pid
+sudo rm -f /var/run/suricata-command.socket
+🔹 Step 2: Clear Suricata Logs
+Empty the existing eve.json log to start fresh:
+
+bash
+Copy
+Edit
+sudo truncate -s 0 /var/log/suricata/eve.json
+# OR
+sudo sh -c '> /var/log/suricata/eve.json'
+This resets the log without deleting the file.
+
+🔹 Step 3: Identify the Correct Network Interface
+Find your real network interface (important in VMs):
+
+bash
+Copy
+Edit
+ip a
+Look for names like enp0s3, eth0, etc.
+
+🔹 Step 4: Start Suricata in Live Monitoring Mode
+Use the correct interface name here:
+
+bash
+Copy
+Edit
+sudo suricata -i enp0s3 -D
+-i = Interface to monitor
+
+-D = Daemon mode (background)
+
+Validate Suricata is running:
+
+bash
+Copy
+Edit
+sudo systemctl status suricata
+🔹 Step 5: Confirm Log Activity
+In a separate terminal, tail the eve.json log:
+
+bash
+Copy
+Edit
+tail -f /var/log/suricata/eve.json
+Now generate normal traffic (e.g., browse a website) to verify logs are being written.
+
+🔹 Step 6: Run Your Python Detection Script
+Ensure your DDoS detection code is running and reading eve.json:
+
+bash
+Copy
+Edit
+python3 ddos_det.py
+Make sure it’s actively listening or polling the log file.
+
+🔹 Step 7: Launch the DDoS Simulation
+Use hping3 to flood your machine:
+
+bash
+Copy
+Edit
+sudo hping3 -c 10000 -d 120 -S -w 64 -p 80 --flood --rand-source <your-ip>
+Replace <your-ip> with your actual IP (127.0.0.1 for localhost or get via ip a)
+
+This command creates a SYN flood
+
+🔹 Step 8: Watch for Detection
+While the attack is running:
+
+Monitor eve.json via tail -f
+
+Look for Suricata alerts like TCP Flood or Potential DDoS
+
+Your Python script should output something like:
+
+yaml
+Copy
+Edit
+🛑 Potential attack detected from IP: <ip>
+⚠️ Action: Blocking IP... [Simulated]
+✅ Success Criteria
+eve.json is actively logging alerts
+
+Your Python script correctly flags the attack
+
+Suricata runs without interface or socket issues
+
+💡 Optional: Automation Script
+If you'd like, I can help write a Bash script to:
+
+Stop Suricata
+
+Clear logs
+
+Restart Suricata
+
+Tail logs and simulate attack
